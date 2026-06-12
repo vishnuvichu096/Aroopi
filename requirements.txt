@@ -1,0 +1,19 @@
+# I'm Faceless — YouTube Shorts Automation
+# Core pipeline
+edge-tts>=6.1.9
+moviepy==1.0.3
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Image processing (local fallback image generator)
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# Google APIs (YouTube upload + Gemini)
+google-generativeai>=0.8.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.100.0
+
+# Video encoding backend
+imageio[ffmpeg]

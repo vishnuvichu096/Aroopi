@@ -1,0 +1,22 @@
+# Portable Git
+PortableGit.exe
+PortableGit/
+
+# Python caching
+__pycache__/
+*.pyc
+
+# Local secrets & tokens
+.env
+token.pickle
+b64_token.txt
+client_secret.json
+
+# Temp moviepy files in root
+*TEMP_MPY_wvf_snd.mp4
+*TEMP_MPY_wvf_snd.mp3
+*.mp4.temp
+temp_audio.mp3
+part_*_video.mp4
+final_short.mp4
+*TEMP_MPY_*
