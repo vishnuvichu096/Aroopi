@@ -30,43 +30,32 @@ from moviepy.editor import (
 OUTPUT_W, OUTPUT_H = 1080, 1920
 FPS = 24
 TRANSITION_DURATION = 0.8   # seconds for crossfade
-
-
 def _make_ken_burns_clip(img_path: str, duration: float) -> CompositeVideoClip:
     """
-    Returns an ImageClip wrapped inside a CompositeVideoClip, animating a slow Ken Burns zoom/pan.
+    Returns an ImageClip wrapped inside a CompositeVideoClip, animating a slow Ken Burns zoom.
     """
     clip = ImageClip(img_path).set_duration(duration)
 
-    # ── Force the image to fill the frame + 15% margin for motion ────────────
+    # Force the image to fill the frame + 25% margin for motion
     src_w, src_h = clip.size
-    scale = max(OUTPUT_W / src_w, OUTPUT_H / src_h) * 1.15
+    scale = max(OUTPUT_W / src_w, OUTPUT_H / src_h) * 1.25
     clip = clip.resize(width=int(src_w * scale), height=int(src_h * scale))
 
-    # ── Apply Ken Burns motion effect ────────────────────────────────────────
-    effect = random.choice(["zoom_in", "zoom_out", "pan_right", "pan_left"])
+    # Apply Ken Burns zoom motion effect
+    effect = random.choice(["zoom_in", "zoom_out"])
 
     if effect == "zoom_in":
-        clip = clip.resize(lambda t: 1.0 + 0.08 * (t / duration))
+        # Slow zoom in: starts at 1.0 (already scaled size) and scales up to 1.15 over duration
+        clip = clip.resize(lambda t: 1.0 + 0.15 * (t / duration))
         clip = clip.set_position("center")
-
-    elif effect == "zoom_out":
-        clip = clip.resize(lambda t: 1.08 - 0.08 * (t / duration))
+    else:
+        # Slow zoom out: starts at 1.15 (larger size) and scales down to 1.0 over duration
+        clip = clip.resize(lambda t: 1.15 - 0.15 * (t / duration))
         clip = clip.set_position("center")
-
-    elif effect == "pan_right":
-        max_pan = (clip.w - OUTPUT_W) / 2
-        clip = clip.set_position(lambda t: (-max_pan + max_pan * 2 * (t / duration), "center"))
-
-    elif effect == "pan_left":
-        max_pan = (clip.w - OUTPUT_W) / 2
-        clip = clip.set_position(lambda t: (max_pan - max_pan * 2 * (t / duration), "center"))
 
     # Wrap in CompositeVideoClip of fixed output size to force rendering frame-by-frame
     composite = CompositeVideoClip([clip], size=(OUTPUT_W, OUTPUT_H)).set_duration(duration)
     return composite
-
-
 def compose_video(
     media_paths: list,
     overlay_paths: list,

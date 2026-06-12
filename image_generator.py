@@ -203,6 +203,12 @@ _FONT_PATHS = [
     "C:/Windows/Fonts/georgia.ttf",
     "C:/Windows/Fonts/times.ttf",
     "C:/Windows/Fonts/Arial.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
 ]
 
 
@@ -216,7 +222,7 @@ def _load_font(size: int):
     return ImageFont.load_default()
 
 
-def _wrap_text(text: str, max_chars: int = 28) -> list:
+def _wrap_text(text: str, max_chars: int = 24) -> list:
     words = text.split()
     lines, current = [], []
     for word in words:
@@ -256,9 +262,6 @@ def _generate_locally(prompt: str, output_path: str, index: int) -> bool:
     img = Image.fromarray(arr, "RGB")
     img = img.filter(ImageFilter.GaussianBlur(radius=1.8))
 
-    img = Image.fromarray(arr, "RGB")
-    img = img.filter(ImageFilter.GaussianBlur(radius=1.8))
-
     # ── Heavy vignette ───────────────────────────────────────────────────────
     vignette_arr = np.zeros((IMG_H, IMG_W), dtype=np.float32)
     vig_dist = np.sqrt((x_idx - cx) ** 2 + (y_idx - cy) ** 2)
@@ -287,23 +290,23 @@ def draw_overlays(image_path: str, story_name: str, part_num: int, subtitle_text
             
             # --- Draw Header (Title & Part) ---
             title_str = f"{story_name.upper()} : PART {part_num}"
-            font_title = _load_font(40)
+            font_title = _load_font(70)
             
             # Draw semi-transparent header bar
             header_overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
             h_draw = ImageDraw.Draw(header_overlay)
-            h_draw.rectangle([0, 0, w, 150], fill=(0, 0, 0, 150))
+            h_draw.rectangle([0, 0, w, 220], fill=(0, 0, 0, 150))
             img = Image.alpha_composite(img.convert("RGBA"), header_overlay).convert("RGB")
             
             # Re-get draw context for drawing text
             draw = ImageDraw.Draw(img)
-            draw.text((w // 2, 75), title_str, fill=(210, 30, 30), font=font_title, anchor="mm")
+            draw.text((w // 2, 110), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
             
             # --- Draw Footer (Subtitle) ---
-            font_sub = _load_font(34)
-            lines = _wrap_text(subtitle_text, max_chars=28)
-            line_height = 46
-            footer_h = len(lines) * line_height + 100
+            font_sub = _load_font(58)
+            lines = _wrap_text(subtitle_text, max_chars=24)
+            line_height = 80
+            footer_h = len(lines) * line_height + 120
             
             # Draw semi-transparent footer bar
             footer_overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -313,18 +316,18 @@ def draw_overlays(image_path: str, story_name: str, part_num: int, subtitle_text
             
             # Draw subtitle lines
             draw = ImageDraw.Draw(img)
-            y_start = h - footer_h + 50
+            y_start = h - footer_h + 60
             for i, line in enumerate(lines):
                 # Text shadow
-                draw.text((w // 2 + 2, y_start + i * line_height + 2), line, fill=(0, 0, 0), font=font_sub, anchor="mm")
+                draw.text((w // 2 + 3, y_start + i * line_height + 3), line, fill=(0, 0, 0), font=font_sub, anchor="mm")
                 # Main text
-                draw.text((w // 2, y_start + i * line_height), line, fill=(245, 245, 245), font=font_sub, anchor="mm")
+                draw.text((w // 2, y_start + i * line_height), line, fill=(250, 250, 250), font=font_sub, anchor="mm")
                 
             img.save(image_path, "JPEG", quality=95)
     except Exception as e:
         print(f"    [ERROR] Overlay failed on {image_path}: {e}")
-
-
+ 
+ 
 def create_overlay_image(story_name: str, part_num: int, subtitle_text: str, output_path: str) -> None:
     """Creates a transparent 1080x1920 PNG containing the header title and footer subtitle overlays."""
     try:
@@ -335,27 +338,27 @@ def create_overlay_image(story_name: str, part_num: int, subtitle_text: str, out
         
         # --- Draw Header (Title & Part) ---
         title_str = f"{story_name.upper()} : PART {part_num}"
-        font_title = _load_font(40)
+        font_title = _load_font(70)
         
         # Draw semi-transparent header bar
-        draw.rectangle([0, 0, w, 150], fill=(0, 0, 0, 150))
-        draw.text((w // 2, 75), title_str, fill=(210, 30, 30), font=font_title, anchor="mm")
+        draw.rectangle([0, 0, w, 220], fill=(0, 0, 0, 150))
+        draw.text((w // 2, 110), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
         
         # --- Draw Footer (Subtitle) ---
-        font_sub = _load_font(34)
-        lines = _wrap_text(subtitle_text, max_chars=28)
-        line_height = 46
-        footer_h = len(lines) * line_height + 100
+        font_sub = _load_font(58)
+        lines = _wrap_text(subtitle_text, max_chars=24)
+        line_height = 80
+        footer_h = len(lines) * line_height + 120
         
         # Draw semi-transparent footer bar
         draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 180))
         
-        y_start = h - footer_h + 50
+        y_start = h - footer_h + 60
         for i, line in enumerate(lines):
             # Shadow
-            draw.text((w // 2 + 2, y_start + i * line_height + 2), line, fill=(0, 0, 0, 255), font=font_sub, anchor="mm")
+            draw.text((w // 2 + 3, y_start + i * line_height + 3), line, fill=(0, 0, 0, 255), font=font_sub, anchor="mm")
             # Text
-            draw.text((w // 2, y_start + i * line_height), line, fill=(245, 245, 245, 255), font=font_sub, anchor="mm")
+            draw.text((w // 2, y_start + i * line_height), line, fill=(250, 250, 250, 255), font=font_sub, anchor="mm")
             
         img.save(output_path, "PNG")
     except Exception as e:
