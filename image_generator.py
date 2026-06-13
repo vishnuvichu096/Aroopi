@@ -335,33 +335,43 @@ def draw_overlays(image_path: str, story_name: str, part_num: int, subtitle_text
             
             # --- Draw Header (Title & Part) ---
             title_str = f"{story_name.upper()} : PART {part_num}"
-            font_title = _load_font(85)
+            font_size = 55
+            font_title = _load_font(font_size)
             
-            # Draw semi-transparent header bar
+            # Dynamically shrink title font if it exceeds available width (with padding)
+            bbox = draw.textbbox((0, 0), title_str, font=font_title)
+            text_w = bbox[2] - bbox[0]
+            while text_w > 960 and font_size > 30:
+                font_size -= 2
+                font_title = _load_font(font_size)
+                bbox = draw.textbbox((0, 0), title_str, font=font_title)
+                text_w = bbox[2] - bbox[0]
+            
+            # Draw semi-transparent header bar (20% opacity)
             header_overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
             h_draw = ImageDraw.Draw(header_overlay)
-            h_draw.rectangle([0, 0, w, 245], fill=(0, 0, 0, 150))
+            h_draw.rectangle([0, 0, w, 200], fill=(0, 0, 0, 51))
             img = Image.alpha_composite(img.convert("RGBA"), header_overlay).convert("RGB")
             
             # Re-get draw context for drawing text
             draw = ImageDraw.Draw(img)
-            draw.text((w // 2, 125), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
+            draw.text((w // 2, 100), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
             
             # --- Draw Footer (Subtitle) ---
-            font_sub = _load_font(72)
-            lines = _wrap_text(subtitle_text, max_chars=25)
-            line_height = 95
-            footer_h = len(lines) * line_height + 150
+            font_sub = _load_font(46)
+            lines = _wrap_text(subtitle_text, max_chars=32)
+            line_height = 65
+            footer_h = len(lines) * line_height + 100
             
-            # Draw semi-transparent footer bar
+            # Draw semi-transparent footer bar (20% opacity)
             footer_overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
             f_draw = ImageDraw.Draw(footer_overlay)
-            f_draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 180))
+            f_draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 51))
             img = Image.alpha_composite(img.convert("RGBA"), footer_overlay).convert("RGB")
             
             # Draw subtitle lines
             draw = ImageDraw.Draw(img)
-            y_start = h - footer_h + 75
+            y_start = h - footer_h + 50
             for i, line in enumerate(lines):
                 # Text shadow
                 draw.text((w // 2 + 3, y_start + i * line_height + 3), line, fill=(0, 0, 0), font=font_sub, anchor="mm")
@@ -383,22 +393,32 @@ def create_overlay_image(story_name: str, part_num: int, subtitle_text: str, out
         
         # --- Draw Header (Title & Part) ---
         title_str = f"{story_name.upper()} : PART {part_num}"
-        font_title = _load_font(85)
+        font_size = 55
+        font_title = _load_font(font_size)
         
-        # Draw semi-transparent header bar
-        draw.rectangle([0, 0, w, 245], fill=(0, 0, 0, 150))
-        draw.text((w // 2, 125), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
+        # Dynamically shrink title font if it exceeds available width (with padding)
+        bbox = draw.textbbox((0, 0), title_str, font=font_title)
+        text_w = bbox[2] - bbox[0]
+        while text_w > 960 and font_size > 30:
+            font_size -= 2
+            font_title = _load_font(font_size)
+            bbox = draw.textbbox((0, 0), title_str, font=font_title)
+            text_w = bbox[2] - bbox[0]
+        
+        # Draw semi-transparent header bar (20% opacity)
+        draw.rectangle([0, 0, w, 200], fill=(0, 0, 0, 51))
+        draw.text((w // 2, 100), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
         
         # --- Draw Footer (Subtitle) ---
-        font_sub = _load_font(72)
-        lines = _wrap_text(subtitle_text, max_chars=25)
-        line_height = 95
-        footer_h = len(lines) * line_height + 150
+        font_sub = _load_font(46)
+        lines = _wrap_text(subtitle_text, max_chars=32)
+        line_height = 65
+        footer_h = len(lines) * line_height + 100
         
-        # Draw semi-transparent footer bar
-        draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 180))
+        # Draw semi-transparent footer bar (20% opacity)
+        draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 51))
         
-        y_start = h - footer_h + 75
+        y_start = h - footer_h + 50
         for i, line in enumerate(lines):
             # Shadow
             draw.text((w // 2 + 3, y_start + i * line_height + 3), line, fill=(0, 0, 0, 255), font=font_sub, anchor="mm")
