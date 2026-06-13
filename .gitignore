@@ -16,7 +16,7 @@ client_secret.json
 *TEMP_MPY_wvf_snd.mp4
 *TEMP_MPY_wvf_snd.mp3
 *.mp4.temp
-temp_audio.mp3
-part_*_video.mp4
-final_short.mp4
+/temp_audio.mp3
+/part_*_video.mp4
+/final_short.mp4
 *TEMP_MPY_*
