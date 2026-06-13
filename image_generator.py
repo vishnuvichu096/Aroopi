@@ -250,13 +250,13 @@ _FONT_PATHS = [
 
 
 def _load_font(size: int):
-    # Try the local Roboto-Bold font first (fully portable and guaranteed to exist in our assets/fonts directory)
-    local_font = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fonts", "Roboto-Bold.ttf")
+    # Try the local NotoSansMalayalam-Bold font first (fully portable and guaranteed to exist in our assets/fonts directory)
+    local_font = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fonts", "NotoSansMalayalam-Bold.ttf")
     if os.path.exists(local_font):
         try:
             return ImageFont.truetype(local_font, size)
         except Exception as e:
-            print(f"  [WARN] Failed to load local Roboto font: {e}")
+            print(f"  [WARN] Failed to load local Malayalam font: {e}")
 
     for fp in _FONT_PATHS:
         if os.path.exists(fp):
@@ -323,7 +323,7 @@ def _generate_locally(prompt: str, output_path: str, index: int) -> bool:
 
 
 def draw_overlays(image_path: str, story_name: str, part_num: int, subtitle_text: str) -> None:
-    """Draws a beautiful header (Title + Part) and footer (Subtitle) on the image."""
+    """Draws a beautiful header (Title + Part) on the image."""
     try:
         with Image.open(image_path) as img:
             # Convert to RGB to ensure drawing works properly
@@ -357,34 +357,13 @@ def draw_overlays(image_path: str, story_name: str, part_num: int, subtitle_text
             draw = ImageDraw.Draw(img)
             draw.text((w // 2, 100), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
             
-            # --- Draw Footer (Subtitle) ---
-            font_sub = _load_font(46)
-            lines = _wrap_text(subtitle_text, max_chars=32)
-            line_height = 65
-            footer_h = len(lines) * line_height + 100
-            
-            # Draw semi-transparent footer bar (20% opacity)
-            footer_overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-            f_draw = ImageDraw.Draw(footer_overlay)
-            f_draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 51))
-            img = Image.alpha_composite(img.convert("RGBA"), footer_overlay).convert("RGB")
-            
-            # Draw subtitle lines
-            draw = ImageDraw.Draw(img)
-            y_start = h - footer_h + 50
-            for i, line in enumerate(lines):
-                # Text shadow
-                draw.text((w // 2 + 3, y_start + i * line_height + 3), line, fill=(0, 0, 0), font=font_sub, anchor="mm")
-                # Main text
-                draw.text((w // 2, y_start + i * line_height), line, fill=(250, 250, 250), font=font_sub, anchor="mm")
-                
             img.save(image_path, "JPEG", quality=95)
     except Exception as e:
         print(f"    [ERROR] Overlay failed on {image_path}: {e}")
  
  
 def create_overlay_image(story_name: str, part_num: int, subtitle_text: str, output_path: str) -> None:
-    """Creates a transparent 1080x1920 PNG containing the header title and footer subtitle overlays."""
+    """Creates a transparent 1080x1920 PNG containing the header title overlay only."""
     try:
         # Create a transparent image (RGBA)
         img = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
@@ -409,22 +388,6 @@ def create_overlay_image(story_name: str, part_num: int, subtitle_text: str, out
         draw.rectangle([0, 0, w, 200], fill=(0, 0, 0, 51))
         draw.text((w // 2, 100), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
         
-        # --- Draw Footer (Subtitle) ---
-        font_sub = _load_font(46)
-        lines = _wrap_text(subtitle_text, max_chars=32)
-        line_height = 65
-        footer_h = len(lines) * line_height + 100
-        
-        # Draw semi-transparent footer bar (20% opacity)
-        draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 51))
-        
-        y_start = h - footer_h + 50
-        for i, line in enumerate(lines):
-            # Shadow
-            draw.text((w // 2 + 3, y_start + i * line_height + 3), line, fill=(0, 0, 0, 255), font=font_sub, anchor="mm")
-            # Text
-            draw.text((w // 2, y_start + i * line_height), line, fill=(250, 250, 250, 255), font=font_sub, anchor="mm")
-            
         img.save(output_path, "PNG")
     except Exception as e:
         print(f"    [ERROR] Overlay generation failed for {output_path}: {e}")

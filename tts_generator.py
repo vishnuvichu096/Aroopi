@@ -9,12 +9,11 @@ import asyncio
 import edge_tts
 
 # Voice options for horror narration:
-#   en-US-ChristopherNeural  — deep, dramatic, authoritative male
-#   en-US-GuyNeural          — natural deep male alternative
-#   en-GB-RyanNeural         — British, slightly unsettling
-VOICE       = "en-US-ChristopherNeural"
-RATE        = "-15%"   # Slow down speech for dread
-PITCH       = "-10Hz"  # Lower pitch for creepiness
+#   ml-IN-SobhanaNeural      — clear, dramatic Malayalam female
+#   ml-IN-MidhunNeural       — natural Malayalam male alternative
+VOICE       = "ml-IN-SobhanaNeural"
+RATE        = "-10%"   # Slow down slightly for suspense
+PITCH       = "-5Hz"   # Lower pitch slightly for dread
 VOLUME      = "+0%"    # Keep at full volume
 
 

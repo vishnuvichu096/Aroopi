@@ -77,7 +77,7 @@ def main():
     # ── [5/5] YouTube Upload ───────────────────────────────────────────────────
     print("\n[5/5] Uploading to YouTube Shorts...")
     title = f"{story_name} | Part {part_num}"
-    desc = f"Part {part_num} of '{story_name}' series. Follow and subscribe for the next part! #shorts #horror"
+    desc = f"Malayalam Horror Story: '{story_name}' - Part {part_num}. കൂടുതൽ പേടിപ്പിക്കുന്ന കഥകൾക്കായി ഇപ്പോൾ തന്നെ സബ്സ്ക്രൈബ് ചെയ്യൂ! #shorts #horror #malayalam #kerala #aroopi"
     privacy_status = "public"
     upload_short(output_video_path, title, desc, privacy_status=privacy_status)
 
