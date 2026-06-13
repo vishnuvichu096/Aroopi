@@ -99,6 +99,7 @@ def generate_script_and_prompts():
 
 CRITICAL INSTRUCTIONS:
 1. SCRIPT SEGMENTS: Write exactly 5 script segments (sentences/phrases) in chronological order that tell this part of the story. Total spoken word count should be around 130-145 words.
+   - VOCABULARY: Use simple, gripping, and viewer-friendly words. Avoid overly complex, obscure, or archaic vocabulary (like 'somnium', 'relics', etc.) that is hard for a general audience to understand. The tone should be conversational, direct, and natural, while maintaining a tense, spooky horror atmosphere.
    - SEGMENT 1 (First 5 seconds): This MUST start with an immediate, jaw-dropping, terrifying cliffhanger or creepy hook (e.g. a sudden shocking revelation, bizarre mystery, or intense moment) that instantly grabs the viewer's attention and makes them stay. Do not start with slow setting descriptions.
    - SEGMENTS 2-4: Build the setting, details, and rising suspense.
    - SEGMENT 5: Delivers a final suspense builder/hook.
