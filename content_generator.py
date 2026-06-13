@@ -139,35 +139,8 @@ Return ONLY a raw JSON object in this exact format (no markdown code blocks, no 
     parsed = None
     success = False
 
-    # ── [1/2] Try Gemini API ──────────────────────────────────────────────────
-    if GEMINI_API_KEY:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "responseMimeType": "application/json"
-            }
-        }
-        max_retries = 2
-        for attempt in range(1, max_retries + 1):
-            try:
-                print(f"  >> Querying Gemini API... (Attempt {attempt}/{max_retries})")
-                response = requests.post(url, json=payload, timeout=30)
-                if response.status_code == 200:
-                    raw_text = response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-                    parsed = json.loads(raw_text)
-                    success = True
-                    break
-                else:
-                    print(f"  [WARN] Gemini API HTTP status: {response.status_code}: {response.text[:100]}")
-                    time.sleep(2)
-            except Exception as e:
-                print(f"  [WARN] Gemini attempt failed: {e}")
-                time.sleep(2)
-
-    # ── [2/2] Try OpenAI API Fallback ─────────────────────────────────────────
-    if not success and OPENAI_API_KEY:
-        print("  >> [Fallback] Querying OpenAI API (gpt-4o-mini)...")
+    # ── [1/2] Try OpenAI API (Primary) ────────────────────────────────────────
+    if OPENAI_API_KEY:
         headers = {
             "Authorization": f"Bearer {OPENAI_API_KEY}",
             "Content-Type": "application/json"
@@ -195,6 +168,32 @@ Return ONLY a raw JSON object in this exact format (no markdown code blocks, no 
                     time.sleep(2)
             except Exception as e:
                 print(f"  [WARN] OpenAI attempt failed: {e}")
+                time.sleep(2)
+
+    # ── [2/2] Try Gemini API Fallback ─────────────────────────────────────────
+    if not success and GEMINI_API_KEY:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
+        max_retries = 2
+        for attempt in range(1, max_retries + 1):
+            try:
+                print(f"  >> Querying Gemini API... (Attempt {attempt}/{max_retries}) (Fallback)")
+                response = requests.post(url, json=payload, timeout=30)
+                if response.status_code == 200:
+                    raw_text = response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    parsed = json.loads(raw_text)
+                    success = True
+                    break
+                else:
+                    print(f"  [WARN] Gemini API HTTP status: {response.status_code}: {response.text[:100]}")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"  [WARN] Gemini attempt failed: {e}")
                 time.sleep(2)
 
     if not success or not parsed:
