@@ -25,8 +25,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "").strip()
 FAL_KEY = os.getenv("FAL_KEY", "").strip()
 
-# Portrait 9:16 resolution for YouTube Shorts
-IMG_W, IMG_H = 1080, 1920
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+
+# Landscape 16:9 resolution for horizontal image generation (prevents black borders when panning)
+IMG_W, IMG_H = 1920, 1080
 
 
 # ─── Tier 1: Fal.ai AI Video Generation (Hunyuan Video) ──────────────────────
@@ -106,7 +108,7 @@ def _generate_via_huggingface(prompt: str, output_path: str) -> bool:
         payload = {
             "inputs": (
                 f"spooky, eerie, atmospheric horror scene: {prompt}. "
-                f"Dark ambient lighting, detailed, 9:16 portrait composition, cinematic."
+                f"Dark ambient lighting, detailed, 16:9 landscape composition, cinematic."
             )
         }
         resp = requests.post(url, headers=headers, json=payload, timeout=45)
@@ -137,7 +139,7 @@ def _generate_via_gemini(prompt: str, output_path: str) -> bool:
                 "parts": [{
                     "text": (
                         f"Generate a single, highly detailed, cinematic, horror-style image. "
-                        f"9:16 portrait aspect ratio. "
+                        f"16:9 landscape aspect ratio. "
                         f"Scene: {prompt}. "
                         f"Style: dark atmospheric, eerie lighting, psychological horror, "
                         f"ultra-detailed, cinematic grade photography."
@@ -162,6 +164,41 @@ def _generate_via_gemini(prompt: str, output_path: str) -> bool:
                         return True
     except Exception as e:
         print(f"    [Tier1-Gemini] Exception: {e}")
+    return False
+def _generate_via_openai_dalle(prompt: str, output_path: str) -> bool:
+    """Attempts to generate a 16:9 landscape image using OpenAI's DALL-E 3 model."""
+    if not OPENAI_API_KEY:
+        return False
+    try:
+        url = "https://api.openai.com/v1/images/generations"
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "dall-e-3",
+            "prompt": (
+                f"A cinematic, ultra-detailed horror/suspense scene. "
+                f"Topic: {prompt}. "
+                f"Style: dark ambient lighting, heavy shadows, eerie atmosphere, 16:9 landscape composition."
+            ),
+            "n": 1,
+            "size": "1792x1024", # DALL-E 3 landscape resolution (roughly 16:9)
+            "quality": "standard"
+        }
+        print("    [Tier-OpenAIDalle] Sending request to DALL-E 3...")
+        resp = requests.post(url, json=payload, headers=headers, timeout=60)
+        if resp.status_code == 200:
+            img_url = resp.json()["data"][0]["url"]
+            img_resp = requests.get(img_url, timeout=30)
+            if img_resp.status_code == 200:
+                with open(output_path, "wb") as f:
+                    f.write(img_resp.content)
+                return True
+        else:
+            print(f"    [Tier-OpenAIDalle] HTTP {resp.status_code}: {resp.text[:150]}")
+    except Exception as e:
+        print(f"    [Tier-OpenAIDalle] Exception: {e}")
     return False
 
 
@@ -213,6 +250,14 @@ _FONT_PATHS = [
 
 
 def _load_font(size: int):
+    # Try the local Roboto-Bold font first (fully portable and guaranteed to exist in our assets/fonts directory)
+    local_font = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fonts", "Roboto-Bold.ttf")
+    if os.path.exists(local_font):
+        try:
+            return ImageFont.truetype(local_font, size)
+        except Exception as e:
+            print(f"  [WARN] Failed to load local Roboto font: {e}")
+
     for fp in _FONT_PATHS:
         if os.path.exists(fp):
             try:
@@ -420,9 +465,17 @@ def generate_images(
                 print("    [OK] Gemini image generated!")
                 media_path = image_path
 
-        # ── Tier 4 (Fallback): Pollinations.ai Image ──────────────────────────
+        # ── Tier 4 (Fallback): OpenAI DALL-E 3 Image ─────────────────────────
+        if not success and OPENAI_API_KEY:
+            print("    [Fallback] Trying Tier 4: OpenAI DALL-E 3...")
+            success = _generate_via_openai_dalle(prompt, image_path)
+            if success:
+                print("    [OK] OpenAI DALL-E 3 image generated!")
+                media_path = image_path
+
+        # ── Tier 5 (Fallback): Pollinations.ai Image ──────────────────────────
         if not success:
-            print("    [Fallback] Trying Tier 4: Pollinations.ai (free)...")
+            print("    [Fallback] Trying Tier 5: Pollinations.ai (free)...")
             if i > 0:
                 time.sleep(3)
             success = _generate_via_pollinations(prompt, image_path, seed=i * 42)
@@ -430,9 +483,9 @@ def generate_images(
                 print("    [OK] Pollinations image generated!")
                 media_path = image_path
 
-        # ── Tier 5 (Fallback): Local Pillow Card ──────────────────────────────
+        # ── Tier 6 (Fallback): Local Pillow Card ──────────────────────────────
         if not success:
-            print("    [Fallback] Using Tier 5: Local offline image generator...")
+            print("    [Fallback] Using Tier 6: Local offline image generator...")
             success = _generate_locally(prompt, image_path, index=i)
             if success:
                 print("    [OK] Local horror card generated!")

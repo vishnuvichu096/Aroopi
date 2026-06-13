@@ -126,55 +126,85 @@ Return ONLY a raw JSON object in this exact format (no markdown code blocks, no 
 }}"""
 
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-    if not GEMINI_API_KEY:
-        raise ValueError("Missing GEMINI_API_KEY in environment variables.")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "responseMimeType": "application/json"
+    parsed = None
+    success = False
+
+    # ── [1/2] Try Gemini API ──────────────────────────────────────────────────
+    if GEMINI_API_KEY:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
         }
-    }
-
-    max_retries = 3
-    for attempt in range(1, max_retries + 1):
-        try:
-            print(f"  >> Querying Gemini API... (Attempt {attempt}/{max_retries})")
-            response = requests.post(url, json=payload, timeout=45)
-
-            if response.status_code == 200:
-                raw_text = response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
-                try:
+        max_retries = 2
+        for attempt in range(1, max_retries + 1):
+            try:
+                print(f"  >> Querying Gemini API... (Attempt {attempt}/{max_retries})")
+                response = requests.post(url, json=payload, timeout=30)
+                if response.status_code == 200:
+                    raw_text = response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
                     parsed = json.loads(raw_text)
-                    
-                    story_name = parsed.get("story_name", "").strip() or state["story_name"] or "Untitled Horror"
-                    script_segments = [sanitize_segment(s) for s in parsed.get("script_segments", [])]
-                    image_prompts = parsed.get("image_prompts", [])
-                    part_summary = parsed.get("part_summary", "").strip()
+                    success = True
+                    break
+                else:
+                    print(f"  [WARN] Gemini API HTTP status: {response.status_code}: {response.text[:100]}")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"  [WARN] Gemini attempt failed: {e}")
+                time.sleep(2)
 
-                    # Validations
-                    if len(script_segments) != 5 or len(image_prompts) != 5:
-                        raise ValueError(f"Got {len(script_segments)} segments and {len(image_prompts)} prompts. Need exactly 5 of each.")
-                    
-                    # Update and save state
-                    state["story_name"] = story_name
-                    state["previous_summary"] = part_summary
-                    state["current_part"] += 1
-                    save_story_state(state)
+    # ── [2/2] Try OpenAI API Fallback ─────────────────────────────────────────
+    if not success and OPENAI_API_KEY:
+        print("  >> [Fallback] Querying OpenAI API (gpt-4o-mini)...")
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You are a creative horror writer that outputs JSON matching the exact schema requested."},
+                {"role": "user", "content": prompt}
+            ],
+            "response_format": {"type": "json_object"}
+        }
+        max_retries = 2
+        for attempt in range(1, max_retries + 1):
+            try:
+                print(f"  >> Querying OpenAI API... (Attempt {attempt}/{max_retries})")
+                response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=30)
+                if response.status_code == 200:
+                    raw_text = response.json()["choices"][0]["message"]["content"].strip()
+                    parsed = json.loads(raw_text)
+                    success = True
+                    break
+                else:
+                    print(f"  [WARN] OpenAI API HTTP status: {response.status_code}: {response.text[:100]}")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"  [WARN] OpenAI attempt failed: {e}")
+                time.sleep(2)
 
-                    return story_name, state["current_part"] - 1, script_segments, image_prompts
+    if not success or not parsed:
+        raise RuntimeError("Failed to generate story script content from both Gemini and OpenAI APIs.")
 
-                except (json.JSONDecodeError, ValueError, KeyError) as parse_err:
-                    print(f"  [WARN] Parsing error: {parse_err}")
-                    print(f"  Raw output preview: {raw_text[:300]}")
-                    time.sleep(5)
-            else:
-                print(f"  [ERROR] Gemini API HTTP status: {response.status_code}: {response.text[:200]}")
-                time.sleep(5)
+    story_name = parsed.get("story_name", "").strip() or state["story_name"] or "Untitled Horror"
+    script_segments = [sanitize_segment(s) for s in parsed.get("script_segments", [])]
+    image_prompts = parsed.get("image_prompts", [])
+    part_summary = parsed.get("part_summary", "").strip()
 
-        except Exception as e:
-            print(f"  [ERROR] Request exception: {e}")
-            time.sleep(5)
+    # Validations
+    if len(script_segments) != 5 or len(image_prompts) != 5:
+        raise ValueError(f"Got {len(script_segments)} segments and {len(image_prompts)} prompts. Need exactly 5 of each.")
+    
+    # Update and save state
+    state["story_name"] = story_name
+    state["previous_summary"] = part_summary
+    state["current_part"] += 1
+    save_story_state(state)
 
-    raise RuntimeError("Failed to generate content after all retries.")
+    return story_name, state["current_part"] - 1, script_segments, image_prompts

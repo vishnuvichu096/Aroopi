@@ -46,6 +46,7 @@ jobs:
         HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
         FAL_KEY: ${{ secrets.FAL_KEY }}
         YOUTUBE_PRIVACY_STATUS: ${{ secrets.YOUTUBE_PRIVACY_STATUS }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         python main.py
 

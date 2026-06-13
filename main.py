@@ -78,7 +78,7 @@ def main():
     print("\n[5/5] Uploading to YouTube Shorts...")
     title = f"{story_name} | Part {part_num}"
     desc = f"Part {part_num} of '{story_name}' series. Follow and subscribe for the next part! #shorts #horror"
-    privacy_status = os.getenv("YOUTUBE_PRIVACY_STATUS", "private").strip().lower()
+    privacy_status = "public"
     upload_short(output_video_path, title, desc, privacy_status=privacy_status)
 
     # ── Done ──────────────────────────────────────────────────────────────────

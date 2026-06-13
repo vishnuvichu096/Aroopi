@@ -32,28 +32,58 @@ FPS = 24
 TRANSITION_DURATION = 0.8   # seconds for crossfade
 def _make_ken_burns_clip(img_path: str, duration: float) -> CompositeVideoClip:
     """
-    Returns an ImageClip wrapped inside a CompositeVideoClip, animating a slow Ken Burns zoom.
+    Returns an ImageClip wrapped inside a CompositeVideoClip, animating a slow Ken Burns zoom/pan.
+    Supports both landscape and portrait inputs, scaling them to prevent black margins.
     """
     clip = ImageClip(img_path).set_duration(duration)
 
-    # Force the image to fill the frame + 25% margin for motion
     src_w, src_h = clip.size
-    scale = max(OUTPUT_W / src_w, OUTPUT_H / src_h) * 1.25
-    clip = clip.resize(width=int(src_w * scale), height=int(src_h * scale))
+    
+    # Scale height to fill the frame (1920) + 15% extra for zoom/motion
+    target_h = int(OUTPUT_H * 1.15)
+    scale = target_h / src_h
+    target_w = int(src_w * scale)
+    
+    # Ensure width also fills the output frame (1080)
+    if target_w < OUTPUT_W:
+        scale_w = OUTPUT_W / target_w
+        target_w = OUTPUT_W
+        target_h = int(target_h * scale_w)
 
-    # Apply Ken Burns zoom motion effect
-    effect = random.choice(["zoom_in", "zoom_out"])
+    clip = clip.resize(width=target_w, height=target_h)
 
-    if effect == "zoom_in":
-        # Slow zoom in: starts at 1.0 (already scaled size) and scales up to 1.15 over duration
-        clip = clip.resize(lambda t: 1.0 + 0.15 * (t / duration))
-        clip = clip.set_position("center")
+    # Apply slow Ken Burns zoom and pan
+    effect = random.choice(["zoom_in_pan_right", "zoom_out_pan_left"])
+
+    if effect == "zoom_in_pan_right":
+        # Zoom from 1.0 to 1.12
+        clip = clip.resize(lambda t: 1.0 + 0.12 * (t / duration))
+        def get_pos(t):
+            # Dynamic dimensions at time t
+            w_t = target_w * (1.0 + 0.12 * (t / duration))
+            h_t = target_h * (1.0 + 0.12 * (t / duration))
+            max_x = w_t - OUTPUT_W
+            max_y = h_t - OUTPUT_H
+            # Pan from left (x=0) to 50% of max width pan
+            x = - (max_x * 0.5 * (t / duration))
+            y = - (max_y / 2)
+            return (int(x), int(y))
+        clip = clip.set_position(get_pos)
     else:
-        # Slow zoom out: starts at 1.15 (larger size) and scales down to 1.0 over duration
-        clip = clip.resize(lambda t: 1.15 - 0.15 * (t / duration))
-        clip = clip.set_position("center")
+        # Zoom from 1.12 down to 1.0
+        clip = clip.resize(lambda t: 1.12 - 0.12 * (t / duration))
+        def get_pos(t):
+            w_t = target_w * (1.12 - 0.12 * (t / duration))
+            h_t = target_h * (1.12 - 0.12 * (t / duration))
+            max_x = w_t - OUTPUT_W
+            max_y = h_t - OUTPUT_H
+            # Pan from 50% of max width pan to left (x=0)
+            x = - (max_x * 0.5 * (1.0 - t / duration))
+            y = - (max_y / 2)
+            return (int(x), int(y))
+        clip = clip.set_position(get_pos)
 
-    # Wrap in CompositeVideoClip of fixed output size to force rendering frame-by-frame
+    # Wrap in CompositeVideoClip of fixed output size
     composite = CompositeVideoClip([clip], size=(OUTPUT_W, OUTPUT_H)).set_duration(duration)
     return composite
 def compose_video(

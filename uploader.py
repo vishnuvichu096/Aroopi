@@ -50,7 +50,7 @@ def get_authenticated_service():
             
     return build("youtube", "v3", credentials=credentials)
 
-def upload_short(video_path: str, title: str, description: str, privacy_status: str = "private") -> bool:
+def upload_short(video_path: str, title: str, description: str, privacy_status: str = "public") -> bool:
     """Uploads a video to YouTube as a Short (automatically detected by aspect ratio and #shorts tag)."""
     if not os.path.exists(video_path):
         print(f"Error: Video file not found at {video_path}")
