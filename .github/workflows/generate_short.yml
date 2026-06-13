@@ -36,7 +36,7 @@ jobs:
         YOUTUBE_TOKEN_PICKLE_BASE64: ${{ secrets.YOUTUBE_TOKEN_PICKLE_BASE64 }}
       run: |
         if [ -n "$YOUTUBE_TOKEN_PICKLE_BASE64" ]; then
-          python -c "import base64, os; open('token.pickle', 'wb').write(base64.b64decode(os.environ['YOUTUBE_TOKEN_PICKLE_BASE64'].strip()))"
+          python -c "import base64, os; s = os.environ['YOUTUBE_TOKEN_PICKLE_BASE64'].strip(); s += '=' * (-len(s) % 4); open('token.pickle', 'wb').write(base64.b64decode(s))"
           echo "YouTube token successfully restored."
         else
           echo "Warning: YOUTUBE_TOKEN_PICKLE_BASE64 secret is not set."
