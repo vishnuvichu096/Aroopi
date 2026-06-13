@@ -16,6 +16,7 @@ if not hasattr(PIL.Image, "ANTIALIAS"):
 
 import os
 import random
+import numpy as np
 from moviepy.editor import (
     ImageClip,
     AudioFileClip,
