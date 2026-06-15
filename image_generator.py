@@ -60,7 +60,8 @@ def _generate_via_aihorde(prompt: str, output_path: str) -> bool:
         status_url = f"https://stablehorde.net/api/v2/generate/check/{task_id}"
         status_api_url = f"https://stablehorde.net/api/v2/generate/status/{task_id}"
         
-        for _ in range(60):
+        # Infinite loop to prevent timeout during heavy queue load
+        while True:
             time.sleep(10)
             try:
                 s_resp = requests.get(status_url, headers={"apikey": AI_HORDE_API_KEY}, timeout=45)
@@ -87,59 +88,10 @@ def _generate_via_aihorde(prompt: str, output_path: str) -> bool:
                 continue
             except Exception as e:
                 print(f"    [Tier0-AIHorde] Status check error: {e}")
-                
-        print("    [Tier0-AIHorde] Request timed out or failed to complete.")
     except Exception as e:
         print(f"    [Tier0-AIHorde] Exception: {e}")
     return False
 
-# ─── Tier 4: Local Pillow Horror Card ─────────────────────────────────────────
-
-_PALETTES = [
-    [(5, 0, 15),  (30, 0, 60)],    # Deep void purple
-    [(0, 5, 15),  (0, 20, 50)],    # Abyss blue
-    [(15, 0, 0),  (60, 5, 0)],     # Blood crimson
-    [(0, 10, 5),  (0, 40, 20)],    # Sickly rot green
-    [(10, 8, 0),  (45, 30, 0)],    # Decay amber
-]
-
-def _generate_locally(prompt: str, output_path: str, index: int) -> bool:
-    import numpy as np
-    from PIL import ImageFilter
-    palette = _PALETTES[index % len(_PALETTES)]
-    bg_col, glow_col = palette
-
-    arr = np.full((IMG_H, IMG_W, 3), bg_col, dtype=np.uint8)
-
-    cx, cy = IMG_W // 2, IMG_H // 2
-    y_idx, x_idx = np.ogrid[:IMG_H, :IMG_W]
-    dist = np.sqrt((x_idx - cx) ** 2 + (y_idx - cy) ** 2)
-    max_dist = np.sqrt(cx**2 + cy**2)
-    ratio = 1 - np.clip(dist / (max_dist * 0.6), 0, 1)
-    ratio = ratio[:, :, np.newaxis]
-
-    glow = np.array(glow_col, dtype=float)
-    bg   = np.array(bg_col, dtype=float)
-    arr  = np.clip(bg + (glow - bg) * ratio, 0, 255).astype(np.uint8)
-
-    noise = np.random.normal(0, 14, arr.shape).astype(np.int16)
-    arr = np.clip(arr.astype(np.int16) + noise, 0, 255).astype(np.uint8)
-
-    img = Image.fromarray(arr, "RGB")
-    img = img.filter(ImageFilter.GaussianBlur(radius=1.8))
-
-    vignette_arr = np.zeros((IMG_H, IMG_W), dtype=np.float32)
-    vig_dist = np.sqrt((x_idx - cx) ** 2 + (y_idx - cy) ** 2)
-    vig_ratio = np.clip(vig_dist / max_dist, 0, 1) ** 1.5
-    vignette_arr = (vig_ratio * 180).astype(np.uint8)
-
-    img_arr = np.array(img).astype(np.int16)
-    vig_3ch = np.stack([vignette_arr, vignette_arr, vignette_arr], axis=2)
-    img_arr = np.clip(img_arr - vig_3ch, 0, 255).astype(np.uint8)
-    img = Image.fromarray(img_arr, "RGB")
-
-    img.save(output_path, "JPEG", quality=92)
-    return True
 
 def _load_font(size: int):
     local_font = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fonts", "NotoSansMalayalam-Bold.ttf")
@@ -209,6 +161,16 @@ def generate_images(
     output_dir: str = "assets"
 ) -> tuple:
     os.makedirs(output_dir, exist_ok=True)
+    
+    # Clean up old files from any failed run of this specific part
+    prefix = f"part_{part_num}_"
+    for f in os.listdir(output_dir):
+        if f.startswith(prefix):
+            try:
+                os.remove(os.path.join(output_dir, f))
+            except Exception:
+                pass
+
     media_paths = []
     overlay_paths = []
 
@@ -231,13 +193,6 @@ def generate_images(
             media_path = image_path
         else:
             print("    [FAIL] AI Horde failed.")
-
-        if not success:
-            print("    [Fallback] Using local offline image generator...")
-            success = _generate_locally(prompt, image_path, index=i)
-            if success:
-                print("    [OK] Local horror card generated!")
-                media_path = image_path
 
         if success and media_path:
             media_paths.append(media_path)
