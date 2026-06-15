@@ -135,18 +135,7 @@ def create_overlay_image(story_name: str, part_num: int, subtitle_text: str, out
         draw.rectangle([0, 0, w, 200], fill=(0, 0, 0, 51))
         draw.text((w // 2, 100), title_str, fill=(230, 30, 30), font=font_title, anchor="mm")
         
-        font_sub = _load_font(46)
-        lines = _wrap_text(subtitle_text, max_chars=32)
-        line_height = 65
-        footer_h = len(lines) * line_height + 100
-        
-        draw.rectangle([0, h - footer_h, w, h], fill=(0, 0, 0, 51))
-        
-        y_start = h - footer_h + 50
-        for i, line in enumerate(lines):
-            draw.text((w // 2 + 3, y_start + i * line_height + 3), line, fill=(0, 0, 0, 255), font=font_sub, anchor="mm")
-            draw.text((w // 2, y_start + i * line_height), line, fill=(250, 250, 250, 255), font=font_sub, anchor="mm")
-            
+
         img.save(output_path, "PNG")
     except Exception as e:
         print(f"    [ERROR] Overlay generation failed for {output_path}: {e}")
