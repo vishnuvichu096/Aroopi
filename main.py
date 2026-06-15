@@ -61,6 +61,15 @@ def main():
     story_dir = os.path.join(assets_dir, story_folder_name)
     os.makedirs(story_dir, exist_ok=True)
     
+    # ── Cleanup Current Part Files ────────────────────────────────────────────
+    prefix = f"part_{part_num}_"
+    for f in os.listdir(story_dir):
+        if f.startswith(prefix):
+            try:
+                os.remove(os.path.join(story_dir, f))
+            except Exception:
+                pass
+    
     # ── Cleanup Old Stories ───────────────────────────────────────────────────
     cleanup_old_stories(assets_dir, story_folder_name)
 

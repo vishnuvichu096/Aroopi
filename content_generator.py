@@ -267,7 +267,10 @@ Return ONLY a raw JSON object in this exact format (no markdown code blocks, no 
     if not success or not parsed:
         raise RuntimeError("Failed to generate story script content from Gemini, OpenAI, and Groq APIs.")
 
-    story_name = parsed.get("story_name", "").strip() or state["story_name"] or "Untitled Horror"
+    if state["current_part"] >= 1:
+        story_name = state["story_name"]
+    else:
+        story_name = parsed.get("story_name", "").strip() or state["story_name"] or "Untitled Horror"
     script_segments = [sanitize_segment(s) for s in parsed.get("script_segments", [])]
     image_prompts = parsed.get("image_prompts", [])
     part_summary = parsed.get("part_summary", "").strip()

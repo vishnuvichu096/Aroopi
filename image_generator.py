@@ -161,16 +161,6 @@ def generate_images(
     output_dir: str = "assets"
 ) -> tuple:
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Clean up old files from any failed run of this specific part
-    prefix = f"part_{part_num}_"
-    for f in os.listdir(output_dir):
-        if f.startswith(prefix):
-            try:
-                os.remove(os.path.join(output_dir, f))
-            except Exception:
-                pass
-
     media_paths = []
     overlay_paths = []
 
