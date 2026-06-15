@@ -25,30 +25,18 @@ from uploader import upload_short
 
 import shutil
 
-def cleanup_old_stories(assets_dir, days=5):
-    print(f"\n[Cleanup] Checking for story folders older than {days} days...")
+def cleanup_old_stories(assets_dir, current_story_folder):
+    print(f"\n[Cleanup] Removing any story folders except '{current_story_folder}'...")
     if not os.path.exists(assets_dir): return
-    now = time.time()
-    cutoff = now - (days * 86400)
     for folder in os.listdir(assets_dir):
-        if folder in ["music", "fonts"]: continue
+        if folder in ["music", "fonts", current_story_folder]: continue
         folder_path = os.path.join(assets_dir, folder)
         if os.path.isdir(folder_path):
-            created_file = os.path.join(folder_path, "created_at.txt")
-            if not os.path.exists(created_file):
-                try:
-                    with open(created_file, "w") as f:
-                        f.write(str(now))
-                except: pass
-            else:
-                try:
-                    with open(created_file, "r") as f:
-                        creation_time = float(f.read().strip())
-                    if creation_time < cutoff:
-                        print(f"  -> Deleting old story folder: {folder}")
-                        shutil.rmtree(folder_path)
-                except Exception as e:
-                    print(f"  -> Failed to check/delete {folder}: {e}")
+            print(f"  -> Deleting old story folder: {folder}")
+            try:
+                shutil.rmtree(folder_path)
+            except Exception as e:
+                print(f"  -> Failed to delete {folder}: {e}")
 
 def main():
     start_time = time.time()
@@ -59,7 +47,6 @@ def main():
     print("=" * 60)
 
     assets_dir = "assets"
-    cleanup_old_stories(assets_dir, days=5)
 
     # ── [1/4] Script & Image Prompts ──────────────────────────────────────────
     print("\n[1/4] Generating Script and Story-Specific Image Prompts...")
@@ -71,6 +58,9 @@ def main():
     story_folder_name = re.sub(r'[^a-zA-Z0-9_-]', '', story_name.replace(" ", "_"))
     story_dir = os.path.join(assets_dir, story_folder_name)
     os.makedirs(story_dir, exist_ok=True)
+    
+    # ── Cleanup Old Stories ───────────────────────────────────────────────────
+    cleanup_old_stories(assets_dir, story_folder_name)
 
     print("\n" + "-" * 50)
     print(f"STORY TITLE: {story_name.upper()} (Part {part_num}/10)")
