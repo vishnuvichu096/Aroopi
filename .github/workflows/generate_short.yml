@@ -2,7 +2,7 @@ name: Generate YouTube Short
 
 on:
   schedule:
-    - cron: '30 4,16 * * *'  # Runs daily at 10:00 AM and 10:00 PM IST (4:30 AM and 4:30 PM UTC)
+    - cron: '43 10,22 * * *'  # Runs daily at 4:13 AM and 4:13 PM IST (22:43 and 10:43 UTC)
   workflow_dispatch:      # Allows manual trigger from GitHub Actions tab
 
 jobs:
@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
         cache: 'pip'
