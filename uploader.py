@@ -103,8 +103,9 @@ def upload_short(video_path: str, title: str, description: str, privacy_status: 
             
     print("\n[SUCCESS] Video uploaded successfully!")
     print(f"Video ID: {response.get('id')}")
-    print(f"Watch URL: https://youtube.com/shorts/{response.get('id')}")
-    return True
+    yt_url = f"https://youtube.com/shorts/{response.get('id')}"
+    print(f"Watch URL: {yt_url}")
+    return yt_url
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

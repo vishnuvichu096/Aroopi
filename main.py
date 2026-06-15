@@ -96,9 +96,23 @@ def main():
     # ── [5/5] YouTube Upload ───────────────────────────────────────────────────
     print("\n[5/5] Uploading to YouTube Shorts...")
     title = f"{story_name} | ഭാഗം {part_num}"
-    desc = f"Malayalam Story: '{story_name}' - ഭാഗം {part_num}. കൂടുതൽ കഥകൾക്കായി ഇപ്പോൾ തന്നെ സബ്സ്ക്രൈബ് ചെയ്യൂ!\n\nDisclaimer: This story is entirely fictional and has nothing to do with real life events or persons.\n\n#shorts #malayalam #kerala #aroopi"
+    
+    from content_generator import load_story_state, save_story_state
+    state = load_story_state()
+    prev_url = state.get("previous_url", "")
+    
+    desc = f"Malayalam Story: '{story_name}' - ഭാഗം {part_num}. കൂടുതൽ കഥകൾക്കായി ഇപ്പോൾ തന്നെ സബ്സ്ക്രൈബ് ചെയ്യൂ!\n\n"
+    if prev_url and part_num > 1:
+        desc += f"➡️ Watch Previous Part: {prev_url}\n\n"
+        
+    desc += "Disclaimer: This story is entirely fictional, AI generated, and has nothing to do with real life events or persons.\n\n#shorts #malayalam #kerala #aroopi"
+    
     privacy_status = "public"
-    upload_short(output_video_path, title, desc, privacy_status=privacy_status)
+    uploaded_url = upload_short(output_video_path, title, desc, privacy_status=privacy_status)
+    
+    if uploaded_url and isinstance(uploaded_url, str):
+        state["previous_url"] = uploaded_url
+        save_story_state(state)
 
     # ── Done ──────────────────────────────────────────────────────────────────
     elapsed = time.time() - start_time
