@@ -23,6 +23,32 @@ from image_generator import generate_images
 from video_composer import compose_video
 from uploader import upload_short
 
+import shutil
+
+def cleanup_old_stories(assets_dir, days=5):
+    print(f"\n[Cleanup] Checking for story folders older than {days} days...")
+    if not os.path.exists(assets_dir): return
+    now = time.time()
+    cutoff = now - (days * 86400)
+    for folder in os.listdir(assets_dir):
+        if folder in ["music", "fonts"]: continue
+        folder_path = os.path.join(assets_dir, folder)
+        if os.path.isdir(folder_path):
+            created_file = os.path.join(folder_path, "created_at.txt")
+            if not os.path.exists(created_file):
+                try:
+                    with open(created_file, "w") as f:
+                        f.write(str(now))
+                except: pass
+            else:
+                try:
+                    with open(created_file, "r") as f:
+                        creation_time = float(f.read().strip())
+                    if creation_time < cutoff:
+                        print(f"  -> Deleting old story folder: {folder}")
+                        shutil.rmtree(folder_path)
+                except Exception as e:
+                    print(f"  -> Failed to check/delete {folder}: {e}")
 
 def main():
     start_time = time.time()
@@ -33,6 +59,7 @@ def main():
     print("=" * 60)
 
     assets_dir = "assets"
+    cleanup_old_stories(assets_dir, days=5)
 
     # ── [1/4] Script & Image Prompts ──────────────────────────────────────────
     print("\n[1/4] Generating Script and Story-Specific Image Prompts...")
