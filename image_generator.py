@@ -142,7 +142,7 @@ def _generate_locally(prompt: str, output_path: str, index: int) -> bool:
     return True
 
 def _load_font(size: int):
-    local_font = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fonts", "Roboto-Bold.ttf")
+    local_font = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fonts", "NotoSansMalayalam-Bold.ttf")
     if os.path.exists(local_font):
         try:
             return ImageFont.truetype(local_font, size)
@@ -168,7 +168,7 @@ def create_overlay_image(story_name: str, part_num: int, subtitle_text: str, out
         draw = ImageDraw.Draw(img)
         w, h = img.size
         
-        title_str = f"{story_name.upper()} : PART {part_num}"
+        title_str = f"{story_name} : ഭാഗം {part_num}"
         font_size = 55
         font_title = _load_font(font_size)
         

@@ -95,8 +95,8 @@ def main():
 
     # ── [5/5] YouTube Upload ───────────────────────────────────────────────────
     print("\n[5/5] Uploading to YouTube Shorts...")
-    title = f"{story_name} | Part {part_num}"
-    desc = f"Malayalam Story: '{story_name}' - Part {part_num}. കൂടുതൽ കഥകൾക്കായി ഇപ്പോൾ തന്നെ സബ്സ്ക്രൈബ് ചെയ്യൂ!\n\nDisclaimer: This story is entirely fictional and has nothing to do with real life events or persons.\n\n#shorts #malayalam #kerala #aroopi"
+    title = f"{story_name} | ഭാഗം {part_num}"
+    desc = f"Malayalam Story: '{story_name}' - ഭാഗം {part_num}. കൂടുതൽ കഥകൾക്കായി ഇപ്പോൾ തന്നെ സബ്സ്ക്രൈബ് ചെയ്യൂ!\n\nDisclaimer: This story is entirely fictional and has nothing to do with real life events or persons.\n\n#shorts #malayalam #kerala #aroopi"
     privacy_status = "public"
     upload_short(output_video_path, title, desc, privacy_status=privacy_status)
 
