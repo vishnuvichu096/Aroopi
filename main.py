@@ -54,8 +54,10 @@ def main():
     full_script = " ".join(script_segments)
 
     # ── Safe folder name for the story ────────────────────────────────────────
-    import re
-    story_folder_name = re.sub(r'[^a-zA-Z0-9_-]', '', story_name.replace(" ", "_"))
+    import hashlib
+    # Create a safe, unique folder name using a short hash of the Malayalam title
+    safe_hash = hashlib.md5(story_name.encode('utf-8')).hexdigest()[:8]
+    story_folder_name = f"story_{safe_hash}"
     story_dir = os.path.join(assets_dir, story_folder_name)
     os.makedirs(story_dir, exist_ok=True)
     
