@@ -45,12 +45,13 @@ jobs:
     - name: Run Script
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
-        FAL_KEY: ${{ secrets.FAL_KEY }}
-        YOUTUBE_PRIVACY_STATUS: ${{ secrets.YOUTUBE_PRIVACY_STATUS }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
+        AI_HORDE_API_KEY: ${{ secrets.AI_HORDE_API_KEY }}
+        YOUTUBE_PRIVACY_STATUS: ${{ secrets.YOUTUBE_PRIVACY_STATUS }}
       run: |
-        python main.py
+        python -u main.py
 
     - name: Commit State Changes
       run: |
