@@ -79,6 +79,19 @@ def _generate_via_aihorde(prompt: str, output_path: str) -> bool:
                                     if img_resp.status_code == 200:
                                         with open(output_path, "wb") as f:
                                             f.write(img_resp.content)
+                                            
+                                        # Validate image
+                                        from PIL import ImageStat
+                                        with Image.open(output_path) as img:
+                                            stat = ImageStat.Stat(img)
+                                            stddev = sum(stat.stddev) / len(stat.stddev)
+                                            
+                                        if stddev < 15.0:
+                                            print(f"    [Tier0-AIHorde] WARNING: Broken blank tile detected (stddev={stddev:.2f}). Rejecting...")
+                                            if os.path.exists(output_path):
+                                                os.remove(output_path)
+                                            return False
+                                            
                                         with Image.open(output_path) as img:
                                             img = img.resize((IMG_W, IMG_H), Image.Resampling.LANCZOS)
                                             img.save(output_path, "JPEG", quality=95)
@@ -165,18 +178,17 @@ def generate_images(
         success = False
         media_path = None
 
-        print("    Trying AI Horde (SDXL)...")
-        success = _generate_via_aihorde(prompt, image_path)
-        if success:
-            print("    [OK] AI Horde image generated!")
-            media_path = image_path
-        else:
-            print("    [FAIL] AI Horde failed.")
+        while not success:
+            print("    Trying AI Horde (SDXL)...")
+            success = _generate_via_aihorde(prompt, image_path)
+            if success:
+                print("    [OK] AI Horde image generated!")
+                media_path = image_path
+            else:
+                print("    [WARN] AI Horde failed or returned a broken tile. Retrying immediately...")
 
         if success and media_path:
             media_paths.append(media_path)
-        else:
-            print(f"    [ERROR] All tiers failed for scene {i+1}. Skipping.")
 
     if not media_paths:
         raise RuntimeError("No media assets were generated at all.")
