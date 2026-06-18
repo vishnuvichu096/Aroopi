@@ -2,31 +2,70 @@
 image_generator.py
 ──────────────────
 Generates story-relevant horror images using a fallback strategy:
-  Tier 1: Hugging Face (FLUX.1-schnell)
-  Tier 2: AI Horde (Stable Horde)
-  Tier 3: Pollinations.ai
-  Tier 4: Local offline Pillow-based stylized horror card
+  Tier 0: Pollinations.ai (fast, free, ~10-30 seconds)
+  Tier 1: AI Horde SDXL (slow fallback, free, ~30-60 minutes)
 """
 
 import os
 import time
 import requests
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageStat
 from dotenv import load_dotenv
 import urllib.parse
 import shutil
 
 load_dotenv()
-HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "").strip()
 AI_HORDE_API_KEY = os.getenv("AI_HORDE_API_KEY", "0000000000").strip()
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "").strip()
-FAL_KEY = os.getenv("FAL_KEY", "").strip()
 
 # Portrait 9:16 resolution for YouTube Shorts
 IMG_W, IMG_H = 1080, 1920
 
-# ─── Tier 0: AI Horde (SDXL) ──────────────────────────────────────────────────
+# ─── Image Validator ──────────────────────────────────────────────────────────
+def _validate_image(path: str) -> bool:
+    """Reject blank/broken tiles by checking pixel standard deviation."""
+    try:
+        with Image.open(path) as img:
+            stat = ImageStat.Stat(img)
+            stddev = sum(stat.stddev) / len(stat.stddev)
+        if stddev < 15.0:
+            print(f"    [VALIDATOR] WARNING: Broken blank tile detected (stddev={stddev:.2f}). Rejecting...")
+            if os.path.exists(path):
+                os.remove(path)
+            return False
+        return True
+    except Exception as e:
+        print(f"    [VALIDATOR] Error validating image: {e}")
+        return False
+
+# ─── Tier 0: Pollinations.ai (Fast & Free) ─────────────────────────────────────
+def _generate_via_pollinations(prompt: str, output_path: str) -> bool:
+    try:
+        enhanced_prompt = f"{prompt}, cinematic, highly detailed, realistic, dramatic lighting, portrait 9:16"
+        encoded = urllib.parse.quote(enhanced_prompt)
+        url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1344&nologo=true&seed={int(time.time())}"
+        print("    [Tier0-Pollinations] Requesting image...")
+        resp = requests.get(url, timeout=120)
+        if resp.status_code == 200 and len(resp.content) > 5000:
+            with open(output_path, "wb") as f:
+                f.write(resp.content)
+            if not _validate_image(output_path):
+                return False
+            with Image.open(output_path) as img:
+                img = img.resize((IMG_W, IMG_H), Image.Resampling.LANCZOS)
+                img.save(output_path, "JPEG", quality=95)
+            return True
+        else:
+            print(f"    [Tier0-Pollinations] Failed: HTTP {resp.status_code}, size={len(resp.content)} bytes")
+            return False
+    except requests.exceptions.Timeout:
+        print("    [Tier0-Pollinations] Request timed out.")
+        return False
+    except Exception as e:
+        print(f"    [Tier0-Pollinations] Exception: {e}")
+        return False
+
+# ─── Tier 1: AI Horde SDXL (Slow Fallback) ─────────────────────────────────────
 def _generate_via_aihorde(prompt: str, output_path: str) -> bool:
     try:
         url = "https://stablehorde.net/api/v2/generate/async"
@@ -46,11 +85,11 @@ def _generate_via_aihorde(prompt: str, output_path: str) -> bool:
             "censor_nsfw": False,
             "models": ["AlbedoBase XL (SDXL)"]
         }
-        print("    [Tier0-AIHorde] Submitting request for SDXL Image...")
+        print("    [Tier1-AIHorde] Submitting request for SDXL Image...")
         time.sleep(3)
         resp = requests.post(url, json=payload, headers=headers, timeout=90)
         if resp.status_code != 202:
-            print(f"    [Tier0-AIHorde] API returned {resp.status_code}: {resp.text[:100]}")
+            print(f"    [Tier1-AIHorde] API returned {resp.status_code}: {resp.text[:100]}")
             return False
             
         task_id = resp.json().get("id")
@@ -79,19 +118,8 @@ def _generate_via_aihorde(prompt: str, output_path: str) -> bool:
                                     if img_resp.status_code == 200:
                                         with open(output_path, "wb") as f:
                                             f.write(img_resp.content)
-                                            
-                                        # Validate image
-                                        from PIL import ImageStat
-                                        with Image.open(output_path) as img:
-                                            stat = ImageStat.Stat(img)
-                                            stddev = sum(stat.stddev) / len(stat.stddev)
-                                            
-                                        if stddev < 15.0:
-                                            print(f"    [Tier0-AIHorde] WARNING: Broken blank tile detected (stddev={stddev:.2f}). Rejecting...")
-                                            if os.path.exists(output_path):
-                                                os.remove(output_path)
+                                        if not _validate_image(output_path):
                                             return False
-                                            
                                         with Image.open(output_path) as img:
                                             img = img.resize((IMG_W, IMG_H), Image.Resampling.LANCZOS)
                                             img.save(output_path, "JPEG", quality=95)
@@ -100,9 +128,9 @@ def _generate_via_aihorde(prompt: str, output_path: str) -> bool:
             except requests.exceptions.Timeout:
                 continue
             except Exception as e:
-                print(f"    [Tier0-AIHorde] Status check error: {e}")
+                print(f"    [Tier1-AIHorde] Status check error: {e}")
     except Exception as e:
-        print(f"    [Tier0-AIHorde] Exception: {e}")
+        print(f"    [Tier1-AIHorde] Exception: {e}")
     return False
 
 
@@ -179,13 +207,24 @@ def generate_images(
         media_path = None
 
         while not success:
-            print("    Trying AI Horde (SDXL)...")
+            # Tier 0: Pollinations (fast)
+            print("    Trying Pollinations.ai...")
+            success = _generate_via_pollinations(prompt, image_path)
+            if success:
+                print("    [OK] Pollinations image generated!")
+                media_path = image_path
+                break
+
+            # Tier 1: AI Horde (slow fallback)
+            print("    [Fallback] Trying AI Horde (SDXL)...")
             success = _generate_via_aihorde(prompt, image_path)
             if success:
                 print("    [OK] AI Horde image generated!")
                 media_path = image_path
-            else:
-                print("    [WARN] AI Horde failed or returned a broken tile. Retrying immediately...")
+                break
+
+            print("    [WARN] Both tiers failed. Retrying from Tier 0...")
+            time.sleep(5)
 
         if success and media_path:
             media_paths.append(media_path)
