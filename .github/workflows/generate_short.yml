@@ -2,7 +2,7 @@ name: Generate YouTube Short
 
 on:
   schedule:
-    - cron: '43 10,22 * * *'  # Runs daily at 4:13 AM and 4:13 PM IST (22:43 and 10:43 UTC)
+    - cron: '43 22 * * *'  # Runs once daily at 4:13 AM IST (22:43 UTC)
   workflow_dispatch:      # Allows manual trigger from GitHub Actions tab
 
 jobs:
